@@ -1,21 +1,5 @@
+import { ExternalLink, Post, PrivateMessage } from "../types";
 import { Time } from "./Time";
-
-export interface ExternalLink {
-  name: string;
-  link: string;
-}
-
-export interface PrivateMessage {
-  message: string;
-  sender: string;
-  time: string;
-}
-
-export interface Post {
-  author: string;
-  content: string;
-  time: string;
-}
 
 export class User {
   name: string;

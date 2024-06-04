@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { Request, Response } from "express";
 import mysql, { RowDataPacket } from "mysql2";
-import { Pool } from "mysql2/promise";
+import { Pool, ResultSetHeader } from "mysql2/promise";
 import { User } from "../types";
 
 dotenv.config();
@@ -58,9 +58,34 @@ const getUser = async (req: Request, res: Response) => {
   }
 };
 
+const userPost = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { post } = req.body;
+  const { author, content, time } = post;
+
+  try {
+    const [result]: [ResultSetHeader, unknown] = await pool.query(
+      `INSERT INTO posts (user_id, author, content)
+      VALUES (?, ?, ?)`,
+      [id, author, content]
+    );
+
+    if (!result || result.affectedRows !== 1) {
+      res.status(404).json({ message: "Failed to post" });
+
+      return;
+    }
+
+    res.status(201).json({ message: `User with id ${id} posted successfully` });
+  } catch (error) {
+    console.log("Error posting", error);
+  }
+};
+
 const usersController = {
   getUsers,
   getUser,
+  userPost,
 };
 
 export { usersController };

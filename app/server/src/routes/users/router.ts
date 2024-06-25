@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import mysql, { ResultSetHeader, RowDataPacket } from "mysql2";
-import { Pool } from "mysql2/promise";
+import { Pool, QueryError } from "mysql2/promise";
 import { User } from "../../types";
 
 const pool: Pool = mysql
@@ -106,6 +106,46 @@ usersRouter.post(
     } catch (error) {
       console.log("Error following", error);
       res.status(404).json({ message: "Failed to follow user" });
+    }
+  }
+);
+
+usersRouter.post(
+  "/:sender_id/pm/:receiver_id",
+  async (req: Request, res: Response) => {
+    const { sender_id, receiver_id } = req.params;
+    const { content } = req.body;
+
+    try {
+      const [result]: [ResultSetHeader, unknown] = await pool.query(
+        `INSERT INTO private_messages (sender_id, receiver_id, content)
+      VALUES (?, ?,?)`,
+        [sender_id, receiver_id, content]
+      );
+
+      if (!result || result.affectedRows !== 1) {
+        res.status(404).json({ message: "Failed to pm user" });
+
+        return;
+      }
+
+      res
+        .status(201)
+        .json({ message: `User with id ${receiver_id} notified successfully` });
+    } catch (error) {
+      console.log("Error notifiying", error);
+
+      if ((error as QueryError).code === "ER_NO_REFERENCED_ROW_2") {
+        res.status(400).json({ message: "User does not exists" });
+        return;
+      } else if ((error as QueryError).code === "ER_BAD_NULL_ERROR") {
+        res.status(400).json({ message: "Content needed" });
+        return;
+      }
+
+      res
+        .status(500)
+        .json({ message: "Failed to notify user, internal error" });
     }
   }
 );

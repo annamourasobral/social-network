@@ -150,4 +150,44 @@ usersRouter.post(
   }
 );
 
+usersRouter.post(
+  "/notify/:notified_id",
+  async (req: Request, res: Response) => {
+    const { notified_id } = req.params;
+    const { content } = req.body;
+
+    try {
+      const [result]: [ResultSetHeader, unknown] = await pool.query(
+        `INSERT INTO notifications (notified_id, content)
+      VALUES (?, ?)`,
+        [notified_id, content]
+      );
+
+      if (!result || result.affectedRows !== 1) {
+        res.status(404).json({ message: "Failed to notify user" });
+
+        return;
+      }
+
+      res
+        .status(201)
+        .json({ message: `User with id ${notified_id} notified successfully` });
+    } catch (error) {
+      console.log("Error notifiying", error);
+
+      if ((error as QueryError).code === "ER_NO_REFERENCED_ROW_2") {
+        res.status(400).json({ message: "User does not exists" });
+        return;
+      } else if ((error as QueryError).code === "ER_BAD_NULL_ERROR") {
+        res.status(400).json({ message: "Content needed" });
+        return;
+      }
+
+      res
+        .status(500)
+        .json({ message: "Failed to notify user, internal error" });
+    }
+  }
+);
+
 export default usersRouter;

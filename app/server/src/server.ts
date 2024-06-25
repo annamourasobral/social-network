@@ -1,12 +1,21 @@
+import dotenv from "dotenv";
+dotenv.config();
+
+import cors from "cors";
 import express, { Express } from "express";
-import authRouter from "./routes/authRouter";
-import usersRouter from "./routes/usersRouter";
+import { connectDB } from "./database";
+import authRouter from "./routes/auth/router";
+import usersRouter from "./routes/users/router";
 
-const app: Express = express();
+export const app: Express = express();
 
-const port = 8080;
+const port = process.env.SERVER_PORT;
 
+app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+connectDB();
 
 app.use("/", authRouter);
 app.use("/users", usersRouter);
